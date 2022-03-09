@@ -52,6 +52,7 @@ func GenerateAllTokens(email string, firstName string, lastName string, uid stri
 	return token, refreshToken, err
 }
 
+//used in login 
 func UpdateAllTokens(signedToken string, signedRefreshToken string, userId string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 
@@ -87,3 +88,7 @@ func UpdateAllTokens(signedToken string, signedRefreshToken string, userId strin
 	}
 	return
 }
+
+
+//used in auth middleware
+func ValidateToken(signedToken string)(claims *SignedDetails, msg string)
