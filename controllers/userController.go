@@ -17,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
-	"gopkg.in/mgo.v2/bson"
+	//"gopkg.in/mgo.v2/bson"
 )
 
 var userCollection *mongo.Collection = database.OpenCollection(database.Client, "user")
@@ -46,7 +46,7 @@ func VerifyPassword(userPassword string, providedPassword string) (bool, string)
 
 func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		var ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 		var user models.User
 
 		if err := c.BindJSON(&user); err != nil {
@@ -55,7 +55,6 @@ func Signup() gin.HandlerFunc {
 		}
 
 		validationErr := validate.Struct(user)
-
 		if validationErr != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": validationErr.Error()})
 			return
@@ -67,8 +66,10 @@ func Signup() gin.HandlerFunc {
 			log.Panic(err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "an error occurers while checking for the  email"})
 		}
+
 		password := HashPassword(*user.Password)
 		user.Password = &password
+
 		count, err = userCollection.CountDocuments(ctx, bson.M{"phone": user.Phone})
 		defer cancel()
 		if err != nil {
@@ -81,8 +82,8 @@ func Signup() gin.HandlerFunc {
 		}
 		user.CreatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
 		user.UpdatedAt, _ = time.Parse(time.RFC3339, time.Now().Format(time.RFC3339))
-		userId = primitive.NewObjectID()
-		user.UserId = userId.Hex()
+		user.ID = primitive.NewObjectID()
+		user.UserId = user.ID.Hex()
 
 		token, refreshToken, _ := helper.GenerateAllTokens(*user.Email, *user.FirstName, *user.LastName, *user.UserType, *&user.UserId)
 
@@ -93,7 +94,6 @@ func Signup() gin.HandlerFunc {
 		if insertErr != nil {
 			msg := fmt.Sprintf("User item was not created ")
 			c.JSON(http.StatusInternalServerError, gin.H{"err": msg})
-
 			return
 		}
 		defer cancel()
